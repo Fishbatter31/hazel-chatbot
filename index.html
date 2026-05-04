@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hazel — Upper Midwest Hazelnut Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bark:       #3d2b1f;
+    --bark-mid:   #5c3d2a;
+    --bark-light: #7a5240;
+    --hazel:      #8b6914;
+    --hazel-mid:  #b38a20;
+    --hazel-light:#d4a843;
+    --leaf:       #4a6741;
+    --leaf-light: #6b9162;
+    --cream:      #f7f0e6;
+    --cream-dark: #ede3d4;
+    --parchment:  #faf6ef;
+    --text-dark:  #2a1f14;
+    --text-mid:   #4a3728;
+    --text-light: #7a6555;
+    --shadow:     rgba(61,43,31,0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Source Sans 3', sans-serif;
+    background: var(--cream);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(ellipse at 20% 10%, rgba(139,105,20,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 90%, rgba(74,103,65,0.06) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── HEADER ── */
+  header {
+    width: 100%;
+    max-width: 760px;
+    padding: 32px 24px 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .hazel-icon {
+    width: 52px;
+    height: 52px;
+    flex-shrink: 0;
+  }
+
+  .brand-text h1 {
+    font-family: 'Lora', serif;
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--bark);
+    letter-spacing: -0.3px;
+    line-height: 1;
+  }
+
+  .brand-text p {
+    font-size: 13px;
+    color: var(--text-light);
+    font-weight: 400;
+    margin-top: 3px;
+    letter-spacing: 0.3px;
+  }
+
+  .tagline {
+    margin-top: 14px;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, rgba(139,105,20,0.10), rgba(74,103,65,0.08));
+    border-left: 3px solid var(--hazel-light);
+    border-radius: 0 6px 6px 0;
+    font-size: 13.5px;
+    color: var(--text-mid);
+    font-style: italic;
+    line-height: 1.5;
+  }
+
+  /* ── CHAT CONTAINER ── */
+  #chat-container {
+    width: 100%;
+    max-width: 760px;
+    margin: 20px 24px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── STATUS BAR ── */
+  #status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    font-size: 12px;
+    color: var(--text-light);
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--leaf);
+    display: inline-block;
+    margin-right: 6px;
+  }
+
+  .status-dot.error { background: #c0392b; }
+  .status-dot.loading { background: var(--hazel-mid); }
+
+  #clear-btn {
+    background: none;
+    border: none;
+    font-size: 12px;
+    color: var(--text-light);
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Source Sans 3', sans-serif;
+    transition: color 0.2s;
+  }
+
+  #clear-btn:hover { color: var(--bark); }
+
+  /* ── MESSAGES ── */
+  #messages {
+    flex: 1;
+    background: white;
+    border: 1.5px solid var(--cream-dark);
+    border-radius: 12px 12px 0 0;
+    padding: 24px;
+    overflow-y: auto;
+    min-height: 420px;
+    max-height: 560px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    scroll-behavior: smooth;
+    box-shadow: 0 4px 20px var(--shadow);
+  }
+
+  .message {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    animation: fadeUp 0.3s ease forwards;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .message.user { flex-direction: row-reverse; }
+
+  .avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+  }
+
+  .avatar.hazel-avatar {
+    background: linear-gradient(135deg, var(--bark), var(--bark-mid));
+    color: var(--hazel-light);
+    font-family: 'Lora', serif;
+    font-size: 14px;
+  }
+
+  .avatar.user-avatar {
+    background: var(--cream-dark);
+    color: var(--text-mid);
+    font-size: 13px;
+  }
+
+  .bubble {
+    max-width: 82%;
+    padding: 13px 16px;
+    border-radius: 12px;
+    font-size: 14.5px;
+    line-height: 1.65;
+    color: var(--text-dark);
+  }
+
+  .message.hazel .bubble {
+    background: var(--parchment);
+    border: 1px solid var(--cream-dark);
+    border-top-left-radius: 3px;
+  }
+
+  .message.user .bubble {
+    background: var(--bark);
+    color: #f5ecd8;
+    border-top-right-radius: 3px;
+  }
+
+  .bubble p { margin-bottom: 10px; }
+  .bubble p:last-child { margin-bottom: 0; }
+  .bubble strong { color: var(--bark); font-weight: 600; }
+  .message.user .bubble strong { color: var(--hazel-light); }
+  .bubble ul, .bubble ol { padding-left: 18px; margin-bottom: 10px; }
+  .bubble li { margin-bottom: 4px; }
+  .bubble a { color: var(--hazel); text-decoration: underline; }
+  .bubble .source-line {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--cream-dark);
+    font-size: 12px;
+    color: var(--text-light);
+    font-style: italic;
+  }
+
+  .typing-dots {
+    display: flex;
+    gap: 5px;
+    padding: 6px 2px;
+  }
+
+  .typing-dots span {
+    width: 7px;
+    height: 7px;
+    background: var(--hazel-mid);
+    border-radius: 50%;
+    animation: bounce 1.2s ease infinite;
+  }
+
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-6px); }
+  }
+
+  /* ── INPUT AREA ── */
+  #input-area {
+    background: white;
+    border: 1.5px solid var(--cream-dark);
+    border-top: 1px solid var(--cream-dark);
+    border-radius: 0 0 12px 12px;
+    padding: 14px 16px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    box-shadow: 0 4px 20px var(--shadow);
+  }
+
+  #user-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1.5px solid var(--cream-dark);
+    border-radius: 8px;
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 14.5px;
+    color: var(--text-dark);
+    background: var(--parchment);
+    outline: none;
+    resize: none;
+    min-height: 44px;
+    max-height: 120px;
+    line-height: 1.5;
+    transition: border-color 0.2s;
+  }
+
+  #user-input:focus { border-color: var(--hazel-mid); }
+  #user-input::placeholder { color: var(--text-light); }
+  #user-input:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  #send-btn {
+    width: 44px;
+    height: 44px;
+    background: var(--hazel);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, transform 0.1s;
+    flex-shrink: 0;
+  }
+
+  #send-btn:hover { background: var(--hazel-mid); }
+  #send-btn:active { transform: scale(0.95); }
+  #send-btn:disabled { background: var(--cream-dark); cursor: not-allowed; }
+  #send-btn svg { width: 18px; height: 18px; fill: white; }
+
+  /* ── SUGGESTED QUESTIONS ── */
+  #suggestions {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .suggestion-btn {
+    padding: 7px 13px;
+    background: white;
+    border: 1.5px solid var(--cream-dark);
+    border-radius: 20px;
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 13px;
+    color: var(--text-mid);
+    cursor: pointer;
+    transition: all 0.2s;
+    line-height: 1.3;
+  }
+
+  .suggestion-btn:hover {
+    background: var(--parchment);
+    border-color: var(--hazel-light);
+    color: var(--bark);
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    width: 100%;
+    max-width: 760px;
+    padding: 12px 24px 24px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-light);
+    position: relative;
+    z-index: 1;
+    line-height: 1.7;
+  }
+
+  footer a { color: var(--hazel); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    header, #chat-container, footer {
+      margin-left: 12px;
+      margin-right: 12px;
+    }
+    .bubble { max-width: 90%; }
+    #messages { min-height: 340px; max-height: 460px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <svg class="hazel-icon" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="26" cy="26" r="26" fill="#3d2b1f"/>
+      <ellipse cx="26" cy="30" rx="11" ry="13" fill="#b38a20"/>
+      <ellipse cx="26" cy="30" rx="8" ry="10" fill="#d4a843"/>
+      <ellipse cx="26" cy="19" rx="4" ry="3" fill="#8b6914"/>
+      <path d="M26 20 Q34 10 40 14 Q36 22 26 20Z" fill="#4a6741" opacity="0.9"/>
+      <path d="M26 20 Q34 10 40 14" stroke="#6b9162" stroke-width="0.8" fill="none"/>
+      <ellipse cx="22" cy="26" rx="2.5" ry="4" fill="white" opacity="0.15" transform="rotate(-15,22,26)"/>
+    </svg>
+    <div class="brand-text">
+      <h1>Hazel</h1>
+      <p>Upper Midwest Hazelnut Assistant · Powered by UMHDI Research</p>
+    </div>
+  </div>
+  <div class="tagline">
+    Ask me anything about growing hazelnuts in the Upper Midwest — choosing plants, establishing your planting, pest management, economics, and more.
+  </div>
+</header>
+
+<div id="chat-container">
+  <div id="status-bar">
+    <span><span class="status-dot" id="status-dot"></span><span id="status-text">Ready</span></span>
+    <button id="clear-btn" onclick="clearChat()">Clear conversation</button>
+  </div>
+  <div id="messages"></div>
+  <div id="input-area">
+    <textarea id="user-input"
+      placeholder="Ask Hazel a question about growing hazelnuts…"
+      rows="1"
+      onkeydown="handleKey(event)"
+      oninput="autoResize(this)"></textarea>
+    <button id="send-btn" onclick="sendMessage()" title="Send">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+      </svg>
+    </button>
+  </div>
+  <div id="suggestions">
+    <button class="suggestion-btn" onclick="askSuggestion(this)">What cultivars should I plant?</button>
+    <button class="suggestion-btn" onclick="askSuggestion(this)">How do I get Adventure Series plants?</button>
+    <button class="suggestion-btn" onclick="askSuggestion(this)">Can I make money growing hazelnuts?</button>
+    <button class="suggestion-btn" onclick="askSuggestion(this)">How do I prepare my site?</button>
+    <button class="suggestion-btn" onclick="askSuggestion(this)">What pests should I worry about?</button>
+    <button class="suggestion-btn" onclick="askSuggestion(this)">How does pollination work?</button>
+  </div>
+</div>
+
+<footer>
+  Hazel is an AI assistant built on research from the <a href="https://www.midwesthazelnuts.org" target="_blank">Upper Midwest Hazelnut Development Initiative</a>.<br>
+  Always verify important decisions with your local Extension office or grower network.<br>
+  <a href="https://www.midwesthazels.com" target="_blank">midwesthazels.com</a> ·
+  <a href="https://www.midwesthazelnuts.org" target="_blank">midwesthazelnuts.org</a>
+</footer>
+
+<script>
+// ─────────────────────────────────────────────
+// CONFIGURATION
+// Update this URL if you ever rename the worker
+// ─────────────────────────────────────────────
+const WORKER_URL = 'https://hazel-chatbot.extensioncaptureapp.workers.dev/chat';
+
+// ─────────────────────────────────────────────
+// SESSION ID — groups this conversation in logs
+// ─────────────────────────────────────────────
+const SESSION_ID = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+let conversationHistory = [];
+let isLoading = false;
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+window.addEventListener('load', showWelcome);
+
+function showWelcome() {
+  addMessage('hazel',
+    `Hi there! I'm Hazel — a chatbot assistant for hazelnut growers in the Upper Midwest. I can help you with questions about choosing and planting hazelnuts, establishment and care, pest and disease management, the economics of hazelnut production, how to access Adventure Series cultivar plants, and more — all based on research from the Upper Midwest Hazelnut Development Initiative.\n\nWhat can I help you with today?`
+  );
+}
+
+// ─────────────────────────────────────────────
+// MESSAGING
+// ─────────────────────────────────────────────
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function askSuggestion(btn) {
+  document.getElementById('user-input').value = btn.textContent;
+  sendMessage();
+}
+
+async function sendMessage() {
+  if (isLoading) return;
+  const input = document.getElementById('user-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  document.getElementById('suggestions').style.display = 'none';
+
+  addMessage('user', text);
+  conversationHistory.push({ role: 'user', content: text });
+
+  setLoading(true);
+  setStatus('loading', 'Hazel is thinking…');
+  const typingId = showTyping();
+
+  try {
+    const response = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: conversationHistory, sessionId: SESSION_ID }),
+    });
+
+    removeTyping(typingId);
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+      throw new Error(err.error || `HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    const reply = data.reply;
+
+    conversationHistory.push({ role: 'assistant', content: reply });
+    addMessage('hazel', reply);
+    setStatus('ready', 'Ready');
+
+  } catch (err) {
+    removeTyping(typingId);
+    addMessage('hazel',
+      `Sorry, I ran into a problem connecting: ${err.message}. Please try again in a moment.`
+    );
+    setStatus('error', 'Connection error');
+  }
+
+  setLoading(false);
+}
+
+// ─────────────────────────────────────────────
+// UI HELPERS
+// ─────────────────────────────────────────────
+function addMessage(role, text) {
+  const messages = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = `message ${role}`;
+
+  const avatar = document.createElement('div');
+  avatar.className = `avatar ${role === 'hazel' ? 'hazel-avatar' : 'user-avatar'}`;
+  avatar.textContent = role === 'hazel' ? 'H' : '👤';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.innerHTML = formatMessage(text);
+
+  div.appendChild(avatar);
+  div.appendChild(bubble);
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function formatMessage(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(Source:.*?)\*/g, '<span class="source-line">$1</span>')
+    .split('\n\n')
+    .map(p => p.trim())
+    .filter(p => p.length > 0)
+    .map(p => {
+      if (p.match(/^[-•]\s/m) || p.match(/^\d+\.\s/m)) {
+        const lines = p.split('\n');
+        const isOrdered = lines[0].match(/^\d+\./);
+        const tag = isOrdered ? 'ol' : 'ul';
+        const items = lines
+          .map(l => l.replace(/^[-•]\s+/, '').replace(/^\d+\.\s+/, ''))
+          .filter(l => l.trim())
+          .map(l => `<li>${l}</li>`)
+          .join('');
+        return `<${tag}>${items}</${tag}>`;
+      }
+      return `<p>${p.replace(/\n/g, '<br>')}</p>`;
+    })
+    .join('');
+}
+
+function showTyping() {
+  const messages = document.getElementById('messages');
+  const div = document.createElement('div');
+  const id = 'typing-' + Date.now();
+  div.id = id;
+  div.className = 'message hazel';
+  div.innerHTML = `
+    <div class="avatar hazel-avatar">H</div>
+    <div class="bubble">
+      <div class="typing-dots"><span></span><span></span><span></span></div>
+    </div>`;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+  return id;
+}
+
+function removeTyping(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function setLoading(loading) {
+  isLoading = loading;
+  document.getElementById('send-btn').disabled = loading;
+  document.getElementById('user-input').disabled = loading;
+}
+
+function setStatus(state, text) {
+  const dot = document.getElementById('status-dot');
+  dot.className = 'status-dot' + (state === 'error' ? ' error' : state === 'loading' ? ' loading' : '');
+  document.getElementById('status-text').textContent = text;
+}
+
+function clearChat() {
+  conversationHistory = [];
+  document.getElementById('messages').innerHTML = '';
+  document.getElementById('suggestions').style.display = 'flex';
+  setStatus('ready', 'Ready');
+  showWelcome();
+}
+</script>
+</body>
+</html>
